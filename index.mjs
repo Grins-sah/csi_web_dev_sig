@@ -1,5 +1,7 @@
 // we have to make a https backend
 import express from 'express' // import the https library
+import bcrypt from 'bcrypt'
+
 const app = express();
 app.use(express.json()); // 
 app.get('/',(req,res)=>{ // lambda function 
@@ -20,32 +22,41 @@ app.get('/user',(req,res)=>{
         "user":user
     })
 })
-app.post('/signup',(req,res)=>{
+app.post('/signup', (req, res) => {
     const user_name = req.body.name;
     const user_password = req.body.password;
+    const existingUser = user.find((u) => u.user === user_name);
+    if (existingUser) {
+        return res.status(409).json({
+            msg: "User already exists"
+        });
+        
+    }
     user.push({user:user_name,password:user_password});
-    // does this user exist or not
     console.log(`user created with user name ${user_name} `)
     res.status(201).send()
 
 })
-app.post('/login',(req,res)=>{
+
+app.post('/login',async (req,res)=>{
     const user_name = req.body.name;
     const user_password = req.body.password;
     let flag = false;
-    user.forEach((v)=>{
-        console.log(v);
-        if(v.user ===user_name && v.password ===user_password){
-            res.json({
+    for(let i = 0;i<(user.length);i++){
+        const hashed_password =  bcrypt.hashSync(user[i].password,5);
+        console.log(`password ${user[i].password}  sha256 hash :${ hashed_password }`);
+        // bcrypt.compare()
+        if(user[i].user ===user_name && user[i].password ===user_password){
+            return res.json({
                 user:user_name,
                 msg:"sign in"
             })
-            flag = true;
-            return;
+            
+            
         }
-    })
+    }
     if(!flag){
-        res.status(404).json({
+        return res.status(404).json({
             user:user_name,
             msg:"not found"
         })
